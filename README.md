@@ -22,7 +22,7 @@ A Spring Boot application demonstrating AWS deployment using Elastic Beanstalk, 
 2. Engine: **PostgreSQL**
 3. Template: **Free tier**
 4. DB instance identifier: `postgres-springboot`
-5. Master username & password set 
+5. Master username & password set
 6. Connectivity: **Public access → Yes**
 7. Create database
 
@@ -40,10 +40,13 @@ A Spring Boot application demonstrating AWS deployment using Elastic Beanstalk, 
 
 ### 3. CodeBuild Setup
 1. AWS Console → CodeBuild → **Create build project**
-2. Source: **GitHub** → repository connect 
+2. Source: **GitHub** → repository connect
 3. Buildspec: **Use buildspec.yml from repo**
 4. Artifacts: **Amazon S3**
-5. Create build project
+5. Configure environment variables:
+   - `DOCKER_USERNAME` = Docker Hub username
+   - `DOCKER_PASSWORD` = Docker Hub password
+6. Create build project
 
 ### 4. CodePipeline Setup
 1. AWS Console → CodePipeline → **Create pipeline**
@@ -61,17 +64,42 @@ A Spring Boot application demonstrating AWS deployment using Elastic Beanstalk, 
 
 ## ⚙️ CI/CD Pipeline Flow
 
-Push to `master` → CodePipeline triggers → CodeBuild builds JAR → Elastic Beanstalk deploys
+Push to `master` → CodePipeline triggers → Docker Hub login → Maven build & test → JAR artifact → Elastic Beanstalk deploys
 ```yaml
-# buildspec.yml (CodeBuild)
+version: 0.2
 phases:
+  install:
+    runtime-versions:
+      java: corretto21
+    commands:
+      - echo Installing Maven...
+  pre_build:
+    commands:
+      - echo Logging in to Docker Hub...
+      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
   build:
     commands:
-      - mvn clean package 
+      - echo Building, Testing, and Packaging the application...
+      - mvn package
+  post_build:
+    commands:
+      - echo Build, Testing, and Packaging completed.
 artifacts:
   files:
     - target/*.jar
+  discard-paths: yes
+cache:
+  paths:
+    - '/root/.m2/**/*'
 ```
+
+---
+
+## 🧪 Testing
+
+- **JUnit** + **Testcontainers** — Integration tests real PostgreSQL Docker container spin up 
+- Tests cover Controllers, Repositories, and Services layer
+- Docker Hub credentials configured in CodeBuild to pull PostgreSQL image for Testcontainers
 
 ---
 
@@ -124,7 +152,7 @@ aws-deploy-application/
 
 ## 🚀 Quick Start (Local)
 
-**Prerequisites:** Java 21+, Maven, PostgreSQL
+**Prerequisites:** Java 21+, Maven, PostgreSQL, Docker
 ```bash
 git clone https://github.com/MansiArora-dev/aws-deploy-application.git
 cd aws-deploy-application
@@ -143,7 +171,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 - **Java 21** | **Spring Boot** | **Maven**
 - **AWS** — Elastic Beanstalk, RDS, CodePipeline, CodeBuild
-- **PostgreSQL** | **Docker**
+- **PostgreSQL** | **Docker** | **Testcontainers** | **JUnit**
 
 ---
 
