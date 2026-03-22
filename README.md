@@ -1,6 +1,6 @@
 # 🚀 AWS Deploy Application
 
-A **Spring Boot** application deployed on **AWS** using Elastic Beanstalk, RDS (PostgreSQL), and automated CI/CD via CodePipeline and CodeBuild.
+A Spring Boot application demonstrating AWS deployment using Elastic Beanstalk, RDS (PostgreSQL), and automated CI/CD via CodePipeline and CodeBuild.
 
 ---
 
@@ -15,7 +15,51 @@ A **Spring Boot** application deployed on **AWS** using Elastic Beanstalk, RDS (
 
 ---
 
-## ⚙️ CI/CD Pipeline
+## 🛠️ AWS Setup (How I Built This)
+
+### 1. RDS (PostgreSQL) Setup
+1. AWS Console → RDS → **Create database**
+2. Engine: **PostgreSQL**
+3. Template: **Free tier**
+4. DB instance identifier: `postgres-springboot`
+5. Master username & password set 
+6. Connectivity: **Public access → Yes**
+7. Create database
+
+### 2. Elastic Beanstalk Setup
+1. AWS Console → Elastic Beanstalk → **Create application**
+2. Application name: `springboot-service`
+3. Platform: **Corretto 21 (Java)**
+4. Environment type: **Load balanced**
+5. Configure environment variables:
+   - `SPRING_PROFILES_ACTIVE` = `prod`
+   - `DB_URL` = RDS endpoint
+   - `DB_USERNAME` = RDS username
+   - `DB_PASSWORD` = RDS password
+6. Create environment
+
+### 3. CodeBuild Setup
+1. AWS Console → CodeBuild → **Create build project**
+2. Source: **GitHub** → repository connect 
+3. Buildspec: **Use buildspec.yml from repo**
+4. Artifacts: **Amazon S3**
+5. Create build project
+
+### 4. CodePipeline Setup
+1. AWS Console → CodePipeline → **Create pipeline**
+2. Source stage: **GitHub → master branch**
+3. Build stage: **CodeBuild project select**
+4. Deploy stage: **Elastic Beanstalk → environment select**
+5. Create pipeline
+
+### 5. GitHub Connection
+1. CodePipeline → Settings → **Connections**
+2. **Create connection → GitHub**
+3. Authorize AWS to access GitHub repo
+
+---
+
+## ⚙️ CI/CD Pipeline Flow
 
 Push to `master` → CodePipeline triggers → CodeBuild builds JAR → Elastic Beanstalk deploys
 ```yaml
@@ -23,7 +67,7 @@ Push to `master` → CodePipeline triggers → CodeBuild builds JAR → Elastic 
 phases:
   build:
     commands:
-      - mvn clean package -DskipTests
+      - mvn clean package 
 artifacts:
   files:
     - target/*.jar
